@@ -38,6 +38,9 @@ last_mouse_movement_time = time.time()
 
 last_updated_roi = None
 
+drawing_roi = False
+roi_start_x, roi_start_y = None, None
+
 shared_var_lock = threading.Lock()
 
 #callback functions to update the last input time when a mouse or keyboard event is detected
@@ -65,16 +68,10 @@ def on_mouse_move(x, y):
             last_input_time = current_time
             last_mouse_movement_time = current_time
 
-
-
 keyboard_listener = keyboard.Listener(on_press=on_key_event)
 keyboard_listener.start()
 mouse_listener = mouse.Listener(on_click=on_mouse_event, on_move=on_mouse_move)
 mouse_listener.start()
-
-# Hide the console window
-#import ctypes
-#ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
 sequence_number = 0
 
@@ -92,7 +89,6 @@ draw.polygon([(8, 24), (16, 28), (24, 24)], fill='black')
 
 # Save the image to a file
 folder_icon.save('folder_icon.png')
-
 
 class OverlayROIWindow(tk.Toplevel):
     def __init__(self, master, callback, *args, **kwargs):
@@ -172,7 +168,6 @@ class SimpleTooltip:
         self.tooltip_window = None
         if tw:
             tw.destroy()
-
 
 class DurationPlanner(tk.Toplevel):
     def __init__(self, master, *args, **kwargs):
@@ -271,7 +266,6 @@ def select_roi():
 
     roi_window.mainloop()
 
-
 def on_roi_window_click(event):
     global roi_start_x, roi_start_y
     roi_start_x, roi_start_y = event.x, event.y
@@ -281,7 +275,6 @@ def on_roi_window_drag(event):
     x, y = event.x, event.y
     event.widget.delete("roi_rectangle")
     event.widget.create_rectangle(roi_start_x, roi_start_y, x, y, outline="red", width=3, tags="roi_rectangle")
-
 
 def on_roi_window_release(event):
     global roi_start_x, roi_start_y
@@ -293,8 +286,6 @@ def on_roi_window_release(event):
     roi_entry.insert(0, ','.join(map(str, roi_coords)))
 
     event.widget.master.destroy()
-
-
 
 def open_roi_overlay():
     overlay_window = OverlayROIWindow(root)
@@ -316,11 +307,9 @@ def generate_video(output_folder, video_name, frame_rate):
     cv2.destroyAllWindows()
     video.release()
 
-
 def capture_screen():
     screen = pyautogui.screenshot(region=ACTIVE_AREA)
     return cv2.cvtColor(np.array(screen), cv2.COLOR_RGB2BGR)
-
 
 def update_preview(roi_coords):
     if not roi_update_active:
@@ -423,12 +412,6 @@ def switch_monitor():
     except ValueError:
         pass
 
-
-
-
-
-
-
 def save_image_with_quality(image, filepath, quality, label_width=15):
     if quality >= 100:
         # Save the image without compression
@@ -444,12 +427,10 @@ def save_image_with_quality(image, filepath, quality, label_width=15):
     text = f"JPEG Quality (%): {quality}"
     quality_label['text'] = text.ljust(label_width)
 
-
 def run_timelapse():
     # Code related to taking screenshots and saving them
     # This should be the main loop of your timelapse task
     pass  # Remove this line after adding your timelapse task code
-
 
 def start_timelapse():
     global timelapse_running
@@ -478,9 +459,6 @@ def start_timelapse():
     else:
         timelapse_running = False
         start_button_text.set("Start Timelapse")
-
-
-
 
 def stop_timelapse():
     global timelapse_running
@@ -531,12 +509,6 @@ def check_video_process():
         check_video_process_scheduled = True  # Set flag here to ensure rescheduling
         root.after(1000, check_video_process)  # check again in 1 second
 
-
-
-
-drawing_roi = False
-roi_start_x, roi_start_y = None, None
-
 def define_roi(event, x, y, flags, param):
     global drawing_roi, roi_start_x, roi_start_y
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -553,16 +525,12 @@ def define_roi(event, x, y, flags, param):
         roi_entry.insert(0, f"{roi_start_x},{roi_start_y},{x - roi_start_x},{y - roi_start_y}")
         update_preview((roi_start_x, roi_start_y, x - roi_start_x, y - roi_start_y))
 
-
-
 def get_roi_from_mouse_coordinates():
     x = min(initial_mouse_x, current_mouse_x)
     y = min(initial_mouse_y, current_mouse_y)
     w = abs(initial_mouse_x - current_mouse_x)
     h = abs(initial_mouse_y - current_mouse_y)
     return x, y, w, h
-
-
 
 def update_roi_preview():
     try:
@@ -582,7 +550,6 @@ def resize_image(image, max_size):
     img.thumbnail(max_size, Image.LANCZOS)
     return np.array(img)
 
-
 def update_preview_periodic():
     global last_updated_roi
     try:
@@ -593,7 +560,6 @@ def update_preview_periodic():
     except ValueError:
         pass
     root.after(100, update_preview_periodic)
-
 
 def on_closing():
     global roi_update_active
@@ -638,7 +604,6 @@ def save_timelapse(start_time, path, interval, duration, roi_coords):
         else:
             stop_timelapse()
 
-
 def initial_roi_update():
     try:
         roi_coords = tuple(map(int, roi_entry.get().split(",")))
@@ -662,7 +627,6 @@ def update_quality_label(val):
         quality_text = "Uncompressed"
     quality_label.config(text=f"Quality: {quality_text}", bg='#F5F5F5')  # Add the bg attribute here as well.
 
-
 def open_output_folder():
     folder_path = os.path.join(os.getcwd(), "timelapse")
     if os.path.exists(folder_path):
@@ -674,7 +638,21 @@ def open_output_folder():
 def show_input_listener_delay_info(event):
     messagebox.showinfo("Input Listener Delay", "This is the interval in seconds for detecting mouse movements/inputs and keystrokes. If no input is detected during the specified interval, screenshots will be paused. Once input is detected again, the timelapse will resume.")
 
-
+def update_quality_label(val):
+    val = int(val)
+    if val <= 20:
+        quality_text = "Minimal"
+    elif val <= 40:
+        quality_text = "Low"
+    elif val <= 60:
+        quality_text = "Medium"
+    elif val <= 80:
+        quality_text = "Good"
+    elif val <= 99:
+        quality_text = "Great"
+    else:
+        quality_text = "Uncompressed"
+    quality_text_label.config(text=f"Quality: {quality_text}", bg='#F5F5F5')
 
 ###################################################################
 
@@ -729,27 +707,6 @@ frame_rate_entry.pack(side=tk.LEFT, padx=5, pady=5)
 frame_rate_entry.insert(0, "30")  # Default value of 30 fps
 
 
-
-
-
-
-
-def update_quality_label(val):
-    val = int(val)
-    if val <= 20:
-        quality_text = "Minimal"
-    elif val <= 40:
-        quality_text = "Low"
-    elif val <= 60:
-        quality_text = "Medium"
-    elif val <= 80:
-        quality_text = "Good"
-    elif val <= 99:
-        quality_text = "Great"
-    else:
-        quality_text = "Uncompressed"
-    quality_text_label.config(text=f"Quality: {quality_text}", bg='#F5F5F5')
-
 quality_label = tk.Label(top_controls_frame, text="JPEG Quality (%):", bg='#F5F5F5', width=20)
 quality_label.pack(side=tk.LEFT, padx=(10, 0), anchor="w")
 
@@ -760,7 +717,6 @@ quality_slider.pack(side=tk.LEFT, padx=(0, 10), anchor="w")
 
 quality_text_label = tk.Label(top_controls_frame, text="Quality: Uncompressed", bg='#F5F5F5')
 quality_text_label.pack(side=tk.LEFT, anchor="w")
-
 
 
 spacer_label = tk.Label(top_controls_frame, width=2, bg='#454545')
